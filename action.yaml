@@ -16,9 +16,9 @@ runs:
       run: |
         VERSION="${{ inputs.version }}"
         if [ "${VERSION}" = "latest" ]; then
-          DOWNLOAD_URL=$(curl -sS https://api.github.com/repos/grezar/codeownerizer/releases/latest | jq -r '.assets[].browser_download_url | select(match("linux_x86_64"))')
+          DOWNLOAD_URL=$(curl -sS https://api.github.com/repos/ikanago/codeownerizer/releases/latest | jq -r '.assets[].browser_download_url | select(match("linux_x86_64"))')
         else
-          DOWNLOAD_URL=$(curl -sS https://api.github.com/repos/grezar/codeownerizer/releases/tags/${VERSION} | jq -r '.assets[].browser_download_url | select(match("linux_x86_64"))')
+          DOWNLOAD_URL=$(curl -sS https://api.github.com/repos/ikanago/codeownerizer/releases/tags/${VERSION} | jq -r '.assets[].browser_download_url | select(match("linux_x86_64"))')
         fi
         curl -sfLO ${DOWNLOAD_URL}
         FILENAME=$(basename $DOWNLOAD_URL .tar.gz)
