@@ -21,20 +21,25 @@ func AddUngrantedOwners(ctx context.Context, api *github.Client, org string, rep
 	if err != nil {
 		return err
 	}
-	log.Printf("teams: %v", teams)
+	log.Println(teams)
 
 	collaborators, _, err := api.Repositories.ListCollaborators(ctx, org, repo, nil)
 	if err != nil {
 		return err
 	}
-	log.Printf("collaborators: %v", collaborators)
+	log.Println(collaborators)
 
 	for _, owner := range owners {
 		switch owner.Type {
 		case codeowners.TeamOwner:
 			teamOwnerName := strings.Split(owner.String(), "/")[1]
 
-			if !hasTeamOwnerSufficientPermission(teams, teamOwnerName) || !containsTeamOwner(teams, teamOwnerName) {
+			if !containsTeamOwner(teams, teamOwnerName) {
+				log.Printf("team %s does not exist in the organization\n", teamOwnerName)
+				continue
+			}
+
+			if !hasTeamOwnerSufficientPermission(teams, teamOwnerName) {
 				resp, err := api.Teams.AddTeamRepoBySlug(ctx, org, teamOwnerName, org, repo, &github.TeamAddTeamRepoOptions{
 					Permission: pushPermission,
 				})
@@ -52,7 +57,12 @@ func AddUngrantedOwners(ctx context.Context, api *github.Client, org string, rep
 		case codeowners.UsernameOwner:
 			userOwnerName := strings.TrimPrefix(owner.String(), "@")
 
-			if !hasUserOwnerSufficientPermission(collaborators, userOwnerName) || !containsUserOwner(collaborators, userOwnerName) {
+			if !containsUserOwner(collaborators, userOwnerName) {
+				log.Printf("user %s does not exist in the organization\n", userOwnerName)
+				continue
+			}
+
+			if !hasUserOwnerSufficientPermission(collaborators, userOwnerName) {
 				_, resp, err := api.Repositories.AddCollaborator(ctx, org, repo, userOwnerName, &github.RepositoryAddCollaboratorOptions{
 					Permission: pushPermission,
 				})
@@ -84,9 +94,14 @@ func AddUngrantedOwners(ctx context.Context, api *github.Client, org string, rep
 				continue
 			}
 
-			emailOwnerUsername := stringify(userSearchResult.Users[0].Name)
+			emailOwnerUsername := stringify(userSearchResult.Users[0].Login)
 
-			if !hasUserOwnerSufficientPermission(collaborators, emailOwnerUsername) || !containsUserOwner(collaborators, emailOwnerUsername) {
+			if !containsUserOwner(collaborators, emailOwnerUsername) {
+				log.Printf("user %s does not exist in the organization\n", emailOwnerUsername)
+				continue
+			}
+
+			if !hasUserOwnerSufficientPermission(collaborators, emailOwnerUsername) {
 				_, resp, err := api.Repositories.AddCollaborator(ctx, org, repo, emailOwnerUsername, &github.RepositoryAddCollaboratorOptions{
 					Permission: pushPermission,
 				})
